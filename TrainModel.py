@@ -40,8 +40,8 @@ args = parser.parse_args()
 subprocess.call(['rclone', 'copy', 'cichlidVideo:McGrath/Apps/CichlidPiData/__AnnotatedData/BoxedFish/', 'AnnotatedData'])
 print()
 for d in [x for x in os.listdir('AnnotatedData/BoxedImages/') if '.tar' in x]:
-	print(' '.join(['tar', '-xvf', d, '-C', 'AnnotatedData/BoxedImages/', '--strip-components', '1']))
-	subprocess.call(['tar', '-xvf', 'AnnotatedData/' + d, '-C', 'AnnotatedData', '--strip-components', '1'])
+	#print(' '.join(['tar', '-xvf', d, '-C', 'AnnotatedData/BoxedImages/', '--strip-components', '1']))
+	subprocess.call(['tar', '-xvf', 'AnnotatedData/BoxedImages/' + d, '-C', 'AnnotatedData/BoxedImages/', '--strip-components', '1'])
 
 learningObj = ML_model(args.Results_directory, args.Videos_directory, args.Videos_file)
 learningObj.createModel()
