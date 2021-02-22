@@ -44,7 +44,9 @@ learningObj.createDataLoaders(args.batch_size, args.n_threads)
 learningObj.trainModel(args.n_epochs, args.nesterov, args.dampening, args.learning_rate, args.momentum, args.weight_decay, args.lr_patience)
  
 
-subprocess.call(['rclone', 'copy', 'cichlidVideo:McGrath/Apps/CichlidPiVideo/__AnnotatedData/BoxedFish/', 'AnnotatedData'])
+subprocess.call(['rclone', 'copy', 'cichlidVideo:McGrath/Apps/CichlidPiData/__AnnotatedData/BoxedFish/', 'AnnotatedData'])
+for d in [x for x in os.listdir(AnnotatedData) if '.tar' in x]:
+	subprocess.call(['tar', '-xvf', 'AnnotatedData/' + d, '-C', 'AnnotatedData', '--strip-components', '1'])
 
 """
 
