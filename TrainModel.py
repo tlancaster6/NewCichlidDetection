@@ -38,7 +38,7 @@ parser.add_argument('--n_epochs',default=100,type=int, help='Number of total epo
 args = parser.parse_args()
 
 subprocess.call(['rclone', 'copy', 'cichlidVideo:McGrath/Apps/CichlidPiData/__AnnotatedData/BoxedFish/', 'AnnotatedData'])
-for d in [x for x in os.listdir(AnnotatedData) if '.tar' in x]:
+for d in [x for x in os.listdir('AnnotatedData') if '.tar' in x]:
 	subprocess.call(['tar', '-xvf', 'AnnotatedData/' + d, '-C', 'AnnotatedData', '--strip-components', '1'])
 
 learningObj = ML_model(args.Results_directory, args.Videos_directory, args.Videos_file)
