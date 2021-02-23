@@ -62,7 +62,7 @@ class ML_model():
         self.valData = JPGLoader(self.images_dt[self.images_dt.Dataset == 'Validate'], self.images_directory, augment = True)
 
         # Output data on split
-        self.images_dt.to_csv('FramesSplit.csv', sep = ',')
+        self.images_dt.to_csv(self.results_directory + 'FramesSplit.csv', sep = ',')
 
         self.trainLoader = torch.utils.data.DataLoader(self.trainData, batch_size = 2, shuffle = True, num_workers = self.n_threads, collate_fn=collate_fn)
         self.valLoader = torch.utils.data.DataLoader(self.valData, batch_size = 2, shuffle = False, num_workers = self.n_threads, collate_fn=collate_fn)
@@ -187,7 +187,8 @@ class ML_model():
         df = pd.DataFrame.from_dict(results, orient='index')
         df['Framefile'] = df.index.map(self.valData.images.__getitem__)
 
-        pdb.set_trace()
+        df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
+
 
     def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
         for output,target in zip(outputs,targets):
