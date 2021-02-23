@@ -88,6 +88,7 @@ class ML_model():
             loss = self.train_one_epoch(i, self.trainLoader, self.model, optimizer)
             lr_scheduler.step(loss)
 
+            self.val_epoch(i, self.valLoader, self.model, optimizer)
 
     def predictLabels(self, trainedModel):
         val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
@@ -171,9 +172,17 @@ class ML_model():
         })
         return loss_meters['loss_total'].avg
 
-    def val_epoch(self, epoch, data_loader, model, criterion, logger):
+    def val_epoch(self, epoch, data_loader, model):
         print('validation at epoch {}'.format(epoch))
-
+        model.eval()
+        results = {}
+        for i, (images, targets) in enumerate(data_loader):
+            images = list(img.to(self.device) for img in images)
+            targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
+            outputs = model(images)
+            pdb.set_trace()
+            outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
+            results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
        
         
     
