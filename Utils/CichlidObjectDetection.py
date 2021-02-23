@@ -191,10 +191,15 @@ class ML_model():
         df = pd.DataFrame.from_dict(results, orient='index')
         df['Framefile'] = df.index.map(self.valData.images.__getitem__)
 
+        self.calculate_accuracy(df)
+
         df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
 
 
-    def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
+    def calculate_accuracy(self, predictions):
+
+        for framefile in set(self.valData.ann_dt.Framefile):
+            pdb.set_trace()
         for output,target in zip(outputs,targets):
             for score1,box1 in zip(output['scores'],output['boxes']):
                 if score1 > conf_cutoff:
