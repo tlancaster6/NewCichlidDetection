@@ -180,16 +180,19 @@ class ML_model():
             images = list(img.to(self.device) for img in images)
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
-            self.calculate_accuracy(targets,outputs)
+            #self.calculate_accuracy(targets,outputs)
 
-            #outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
-            #results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
+            outputs = [{k: v.to('cpu').numpy().tolist() for k, v in t.items()} for t in outputs]
+            results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
+
+        df = pd.DataFrame.from_dict(results, orient='index')
+        pdb.set_trace()
 
     def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
         for output,target in zip(outputs,targets):
             for score1,box1 in zip(output['scores'],output['boxes']):
                 if score1 > conf_cutoff:
-                    for score2,box2 in zip(output['scores'],output['boxes']):
+                    for score2, box2 in zip(output['scores'],output['boxes']):
                         pdb.set_trace()
                         if box1 != box2 and score2 > conf_cutoff and ret_IOU(box1, box2) > 0:
                             pdb.set_trace()
