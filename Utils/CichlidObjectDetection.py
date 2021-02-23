@@ -181,8 +181,7 @@ class ML_model():
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
             #self.calculate_accuracy(targets,outputs)
-            pdb.set_trace()
-            outputs = [{k: v.to(torch.device("cpu")).numpy().tolist() for k, v in t.items()} for t in outputs]
+            outputs = [{k: v.to(torch.device("cpu")).detach().numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
 
         df = pd.DataFrame.from_dict(results, orient='index')
