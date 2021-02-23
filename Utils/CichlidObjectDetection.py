@@ -186,6 +186,8 @@ class ML_model():
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
 
         df = pd.DataFrame.from_dict(results, orient='index')
+        df['Framefile'] = df.index.map(self.valData.images.__getitem__)
+
         pdb.set_trace()
 
     def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
