@@ -212,7 +212,7 @@ class ML_model():
 
                 pdb.set_trace()
 
-    def ret_IOU(self, target_box, output_boxes):
+    def ret_IOU(self, box1, box2):
 
         overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0],box2[0]), max(box1[1],box2[1]), min(box1[2],box2[2]), min(box1[3], box2[3])
 
