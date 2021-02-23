@@ -227,11 +227,11 @@ class ML_model():
                     predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
 
                     if sex == 'u':
-                        matches['Sex'].append(0)
+                        matches['LabelMatch'].append(0)
                     elif sex == predicted_sex:
-                        matches['Sex'].append(1)
+                        matches['LabelMatch'].append(1)
                     else:
-                        matches['Sex'].append(-1)
+                        matches['LabelMatch'].append(-1)
 
             for i, score in enumerate(outputs.iloc[0].scores):
                 if i not in good_outputs:
