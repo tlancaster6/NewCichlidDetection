@@ -210,7 +210,7 @@ class ML_model():
             outputs = predictions[predictions.Framefile == framefile]
 
             if targets.iloc[0].Nfish == 0:
-                continue
+                continuematch
 
             good_outputs = set()
             try:
@@ -219,13 +219,14 @@ class ML_model():
                     box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
                     if len(outputs.iloc[0].boxes) == 0:
                         missing += 1
+                        continue
                     IOUs = [self.ret_IOU(box, x) for x in outputs.iloc[0].boxes]
 
                     match = np.argmax(IOUs)
 
                     if IOUs[match] > 0:
                         good_outputs.add(match)
-                        matches['IOU'].append(IOUs[match])
+                        matches['IOU'].append(float(IOUs[match]))
                         matches['Score'].append(outputs.iloc[0].scores[match])
 
                         predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
