@@ -201,7 +201,7 @@ class ML_model():
         matches = {}
         matches['IOU'] = []
         matches['LabelMatch'] = []
-        matches['Score']
+        matches['Score'] = []
 
         mismatches = []
 
