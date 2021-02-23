@@ -186,6 +186,7 @@ class ML_model():
        
     def calculate_accuracy(self, targets, outputs):
         for t in targets:
+            pass
 
     
     
