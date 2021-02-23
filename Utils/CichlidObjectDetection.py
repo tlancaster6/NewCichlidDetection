@@ -88,7 +88,7 @@ class ML_model():
             loss = self.train_one_epoch(i, self.trainLoader, self.model, optimizer)
             lr_scheduler.step(loss)
 
-            self.val_epoch(i, self.valLoader, self.model, optimizer)
+            self.val_epoch(i, self.valLoader, self.model)
 
     def predictLabels(self, trainedModel):
         val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
@@ -184,6 +184,8 @@ class ML_model():
             outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
        
-        
+    def calculate_accuracy(self, targets, outputs):
+        for t in targets:
+
     
     
