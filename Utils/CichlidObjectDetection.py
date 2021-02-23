@@ -1,4 +1,4 @@
-import os, random, torch, time, pdb
+import os, random, torch, time, pdb, torchvision
 
 import pandas as pd
 import numpy as np
@@ -180,7 +180,9 @@ class ML_model():
             images = list(img.to(self.device) for img in images)
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
+
             pdb.set_trace()
+            idx = [torchvision.ops.nms(x['boxes'],x['scores'], 0.3) for x in outputs]
             #self.calculate_accuracy(targets,outputs)
             outputs = [{k: v.to(torch.device("cpu")).detach().numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
