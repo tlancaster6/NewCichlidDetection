@@ -202,8 +202,8 @@ class ML_model():
             targets = self.valData.ann_dt.loc[self.valData.ann_dt.Framefile == framefile]
             outputs = predictions[predictions.Framefile == framefile]
 
-            #if Nfish == 0:
-            #    pass
+            if targets.iloc[0].Nfish == 0:
+                continue
 
             for box in targets.Box:
                 box = eval(box)
