@@ -20,7 +20,8 @@ class JPGLoader(object):
         self.images = sorted(set(self.ann_dt.Framefile))
         random.shuffle(self.images)
 
-        self.target_transforms = {'m':1,'f':2, 'u':3}
+        #self.target_transforms = {'m':1,'f':2, 'u':3}
+        self.target_transforms = ['b','m','f','u']
 
     def __getitem__(self, idx):
         """get the image and target corresponding to idx
@@ -53,7 +54,7 @@ class JPGLoader(object):
             for index, row in annotations.iterrows():
                 (x1,y1,w,h) = eval(row.Box)
                 boxes.append((x1,y1,x1+w,y1+h))
-                labels.append(self.target_transforms[row.Sex])
+                labels.append(self.target_transforms.index(row.Sex))
                 area.append(w*h)
 
         boxes = torch.as_tensor(boxes, dtype=torch.float32)

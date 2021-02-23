@@ -198,6 +198,13 @@ class ML_model():
 
     def calculate_accuracy(self, predictions):
 
+        matches = {}
+        matches['IOU'] = []
+        matches['LabelMatch'] = []
+        matches['Score']
+
+        mismatches = []
+
         for framefile in set(self.valData.ann_dt.Framefile):
             targets = self.valData.ann_dt.loc[self.valData.ann_dt.Framefile == framefile]
             outputs = predictions[predictions.Framefile == framefile]
@@ -205,12 +212,32 @@ class ML_model():
             if targets.iloc[0].Nfish == 0:
                 continue
 
-            for box in targets.Box:
+            good_outputs = set()
+            for box,sex in zip(targets.Box, targets.Sex):
                 box = eval(box)
                 box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
                 IOUs = [self.ret_IOU(box, x) for x in outputs.iloc[0].boxes]
+                match = np.argmax(IOUs)
 
-                pdb.set_trace()
+                if IOUs[match] > 0:
+                    good_outputs.add(match)
+                    matches['IOU'].append(IOUs[match])
+                    matches['Score'].append(outputs.iloc[0].scores[match])
+
+                    predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
+
+                    if sex == 'u':
+                        matches['Sex'].append(0)
+                    elif sex == predicted_sex:
+                        matches['Sex'].append(1)
+                    else:
+                        matches['Sex'].append(-1)
+
+            for i, score in enumerate(outputs.iloc[0].scores):
+                if i not in good_outputs:
+                    mismatches.append(score)
+
+        pdb.set_trace()
 
     def ret_IOU(self, box1, box2):
 
@@ -221,6 +248,6 @@ class ML_model():
         else:
             intersection = (overlap_x1 - overlap_x0)*(overlap_y1 - overlap_y0)
             union = (box1[2] - box1[0]) * (box1[3] - box1[1]) +  (box2[2] - box2[0]) * (box2[3] - box2[1]) - intersection
-            return(intersection/union)
+            return(np.array(intersection/union))
 
     
