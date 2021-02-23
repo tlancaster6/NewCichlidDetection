@@ -21,7 +21,7 @@ class ML_model():
         self.results_directory = results_directory
         self.images_directory = images_directory
         self.images_dt = pd.read_csv(annotated_images_file, index_col=0)
-        self.images_dt = self.images_dt[(self.images_dt.CorrectAnnotation == 'Yes') & (self.images_dt.Sex != 'u') & (self.images_dt.Nfish != 0)]
+        self.images_dt = self.images_dt[(self.images_dt.CorrectAnnotation == 'Yes')]
 
     def createModel(self):
         print('Creating Model')
@@ -58,7 +58,7 @@ class ML_model():
         self.n_threads = n_threads
         print('Creating Data Loaders')
 
-        self.trainData = JPGLoader(self.images_dt[self.images_dt.Dataset == 'Train'], self.images_directory, augment = True)
+        self.trainData = JPGLoader(self.images_dt[(self.images_dt.Dataset == 'Train') & (self.images_dt.Sex != 'u') & (self.images_dt.Nfish != 0)], self.images_directory, augment = True)
         self.valData = JPGLoader(self.images_dt[self.images_dt.Dataset == 'Validate'], self.images_directory, augment = True)
 
         # Output data on split
@@ -162,7 +162,7 @@ class ML_model():
                       data_time=data_time,
                       loss=loss_meters['loss_total']))
         self.train_logger.log({
-            'epoch': epoch,
+            'epoch': epoch,outputs
             'loss_total': loss_meters['loss_total'].avg,
             'loss_classifier': loss_meters['loss_classifier'].avg,
             'loss_box_reg': loss_meters['loss_box_reg'].avg,
@@ -182,9 +182,8 @@ class ML_model():
             outputs = model(images)
 
             idxs = [torchvision.ops.nms(x['boxes'],x['scores'], 0.3) for x in outputs]
-            pdb.set_trace()
 
-            outputs = [{k:v[id].to(torch.device("cpu")).detach().numpy().tolist() for k, v, in t.items()} for t,id in zip(outputs,idx)]
+            outputs = [{k:v[idx].to(torch.device("cpu")).detach().numpy().tolist() for k, v, in t.items()} for t,idx in zip(outputs,idxs)]
             #self.calculate_accuracy(targets,outputs)
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
 
