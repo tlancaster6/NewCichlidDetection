@@ -185,8 +185,8 @@ class ML_model():
             outputs = model(images)
             self.calculate_accuracy(targets,outputs)
 
-            outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
-            results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
+            #outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
+            #results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
         pdb.set_trace()
 
     def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
