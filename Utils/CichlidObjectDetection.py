@@ -181,12 +181,11 @@ class ML_model():
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
 
-            idx = [torchvision.ops.nms(x['boxes'],x['scores'], 0.3) for x in outputs]
+            idxs = [torchvision.ops.nms(x['boxes'],x['scores'], 0.3) for x in outputs]
             pdb.set_trace()
 
-            testing = {k:v[idx[0]] for k, v, in outputs[0].items()}
+            outputs = [{k:v[id].to(torch.device("cpu")).detach().numpy().tolist() for k, v, in t.items()} for t,id in zip(outputs,idx)]
             #self.calculate_accuracy(targets,outputs)
-            outputs = [{k: v.to(torch.device("cpu")).detach().numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
 
 
