@@ -210,7 +210,9 @@ class ML_model():
             outputs = predictions[predictions.Framefile == framefile]
 
             if targets.iloc[0].Nfish == 0:
-                continuematch
+                for i, score in enumerate(outputs.iloc[0].scores):
+                    mismatches.append(score)
+                continue
 
             good_outputs = set()
             try:
