@@ -204,7 +204,7 @@ class ML_model():
         matches['Score'] = []
 
         mismatches = []
-
+        missing = 0
         for framefile in set(self.valData.ann_dt.Framefile):
             targets = self.valData.ann_dt.loc[self.valData.ann_dt.Framefile == framefile]
             outputs = predictions[predictions.Framefile == framefile]
@@ -213,30 +213,37 @@ class ML_model():
                 continue
 
             good_outputs = set()
-            for box,sex in zip(targets.Box, targets.Sex):
-                box = eval(box)
-                box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
-                IOUs = [self.ret_IOU(box, x) for x in outputs.iloc[0].boxes]
-                match = np.argmax(IOUs)
+            try:
+                for box,sex in zip(targets.Box, targets.Sex):
+                    box = eval(box)
+                    box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
+                    if len(outputs.iloc[0].boxes) == 0:
+                        missing += 1
+                    IOUs = [self.ret_IOU(box, x) for x in outputs.iloc[0].boxes]
 
-                if IOUs[match] > 0:
-                    good_outputs.add(match)
-                    matches['IOU'].append(IOUs[match])
-                    matches['Score'].append(outputs.iloc[0].scores[match])
+                    match = np.argmax(IOUs)
 
-                    predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
+                    if IOUs[match] > 0:
+                        good_outputs.add(match)
+                        matches['IOU'].append(IOUs[match])
+                        matches['Score'].append(outputs.iloc[0].scores[match])
 
-                    if sex == 'u':
-                        matches['LabelMatch'].append(0)
-                    elif sex == predicted_sex:
-                        matches['LabelMatch'].append(1)
+                        predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
+
+                        if sex == 'u':
+                            matches['LabelMatch'].append(0)
+                        elif sex == predicted_sex:
+                            matches['LabelMatch'].append(1)
+                        else:
+                            matches['LabelMatch'].append(-1)
                     else:
-                        matches['LabelMatch'].append(-1)
+                        missing += 1
 
-            for i, score in enumerate(outputs.iloc[0].scores):
-                if i not in good_outputs:
-                    mismatches.append(score)
-
+                for i, score in enumerate(outputs.iloc[0].scores):
+                    if i not in good_outputs:
+                        mismatches.append(score)
+            except:
+                pdb.set_trace()
         pdb.set_trace()
 
     def ret_IOU(self, box1, box2):
