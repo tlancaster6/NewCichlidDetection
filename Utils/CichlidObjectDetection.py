@@ -162,7 +162,7 @@ class ML_model():
                       data_time=data_time,
                       loss=loss_meters['loss_total']))
         self.train_logger.log({
-            'epoch': epoch,outputs
+            'epoch': epoch,
             'loss_total': loss_meters['loss_total'].avg,
             'loss_classifier': loss_meters['loss_classifier'].avg,
             'loss_box_reg': loss_meters['loss_box_reg'].avg,
