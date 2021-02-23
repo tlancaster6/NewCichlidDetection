@@ -180,13 +180,27 @@ class ML_model():
             images = list(img.to(self.device) for img in images)
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
-            pdb.set_trace()
+            self.calculate_accuracy(targets,outputs)
+
             outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
-       
-    def calculate_accuracy(self, targets, outputs):
-        for t in targets:
-            pass
+        pdb.set_trace()
+    def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
+        for output,target in zip(outputs,targets):
+            for score1,box1 in zip(output['scores'],output['boxes']):
+                if score1 > conf_cutoff:
+                    for score2,box2 in zip(output['scores'],output['boxes']):
+                        if box1 != box2 and score2 > conf_cutoff and ret_IOU(box1, box2) > 0:
+                            pdb.set_trace()
 
-    
+    def ret_IOU(self, box1, box2):
+        overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0],box2[0]), max(box1[1],box2[1]), min(box1[2],box2[2]), min(box1[3], box2[3])
+
+        if overlap_x1 < overlap_x0 or overlap_y1 < overlap_y0:
+            return(0)
+        else:
+            intersection = (overlap_x1 - overlap_x0)*(overlap_y1 - overlap_y0)
+            union = (box1[2] - box1[0]) * (box1[3] - box1[1]) +  (box2[2] - box2[0]) * (box2[3] - box2[1]) - intersection
+            return(intersection/union)
+
     
