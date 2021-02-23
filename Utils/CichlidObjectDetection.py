@@ -199,16 +199,21 @@ class ML_model():
     def calculate_accuracy(self, predictions):
 
         for framefile in set(self.valData.ann_dt.Framefile):
-            pdb.set_trace()
-        for output,target in zip(outputs,targets):
-            for score1,box1 in zip(output['scores'],output['boxes']):
-                if score1 > conf_cutoff:
-                    for score2, box2 in zip(output['scores'],output['boxes']):
-                        pdb.set_trace()
-                        if box1 != box2 and score2 > conf_cutoff and ret_IOU(box1, box2) > 0:
-                            pdb.set_trace()
+            targets = self.valData.ann_dt.loc[self.valData.ann_dt.Framefile == framefile]
+            outputs = predictions[predictions.Framefile == framefile]
 
-    def ret_IOU(self, box1, box2):
+            if Nfish == 0:
+                pass
+
+            for box in targets.Box:
+                box = eval(box)
+                box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
+                IOUs = [self.ret_IOU(box, x) for x in outputs.iloc[0].boxes]
+
+                pdb.set_trace()
+
+    def ret_IOU(self, target_box, output_boxes):
+
         overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0],box2[0]), max(box1[1],box2[1]), min(box1[2],box2[2]), min(box1[3], box2[3])
 
         if overlap_x1 < overlap_x0 or overlap_y1 < overlap_y0:
