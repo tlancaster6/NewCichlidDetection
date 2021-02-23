@@ -122,6 +122,9 @@ class ML_model():
         #end_time = time.time()
         for i, (images, targets) in enumerate(data_loader):
 
+            if i > 8:
+                break
+
             data_time.update(time.time() - end_time)
 
             images = list(image.to(self.device) for image in images)
@@ -185,11 +188,13 @@ class ML_model():
             outputs = [{k: v.to(cpu_device).numpy().tolist() for k, v in t.items()} for t in outputs]
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
         pdb.set_trace()
+
     def calculate_accuracy(self, targets, outputs, conf_cutoff = 0.5):
         for output,target in zip(outputs,targets):
             for score1,box1 in zip(output['scores'],output['boxes']):
                 if score1 > conf_cutoff:
                     for score2,box2 in zip(output['scores'],output['boxes']):
+                        pdb.set_trace()
                         if box1 != box2 and score2 > conf_cutoff and ret_IOU(box1, box2) > 0:
                             pdb.set_trace()
 
