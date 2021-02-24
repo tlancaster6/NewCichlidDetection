@@ -270,8 +270,8 @@ class ML_model():
         total_annotations = self.valData.ann_dt[self.valData.ann_dt.Nfish != 0].shape[0]
         AvgIOUGood = np.mean(matches['IOU'])
         AvgScoreGood = np.mean(matches['Score'])
-        AvgScoreBad = np.mean(mismatches)
-        BadPredictions = len(mismatches)
+        AvgScoreBad = np.mean(mismatches['Score'])
+        BadPredictions = len(mismatches['Score'])
         labels = np.array(matches['LabelMatch'])
         correct_sex = len(np.where(labels == 1)[0])
         incorrect_sex = len(np.where(labels == -1)[0])
