@@ -73,8 +73,7 @@ class ML_model():
         
         self.train_logger = Logger(os.path.join(self.results_directory, 'train.log'), ['epoch', 'loss_total', 'loss_classifier','loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg', 'lr'])
         self.train_batch_logger = Logger(os.path.join(self.results_directory, 'train_batch.log'), ['epoch', 'batch', 'iter', 'loss_total', 'lr'])
-        #val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
-
+        self.val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'Matched_Annotations', 'IOU', 'Score_good', 'Score_bad', 'Num_bad', 'Label_Accuracy'])
         #if nesterov:
          #   dampening = 0
         #else:
@@ -91,7 +90,7 @@ class ML_model():
             self.val_epoch(i, self.valLoader, self.model)
 
     def predictLabels(self, trainedModel):
-        val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
+        #val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
 
         checkpoint = torch.load(trainedModel)
         begin_epoch = checkpoint['epoch']
@@ -191,9 +190,19 @@ class ML_model():
         df = pd.DataFrame.from_dict(results, orient='index')
         df['Framefile'] = df.index.map(self.valData.images.__getitem__)
 
-        self.calculate_accuracy(df)
+        val_data = self.calculate_accuracy(df)
 
         df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
+        self.val_logger.log({
+            'epoch': epoch,
+            'Matched_Annotations': str(val_data[0]) + ' of ' + str(val_data[1]),
+            'IOU': val_data[2],
+            'Score_good': val_data[3],
+            'Score_bad': val_data[4],
+            'Num_bad': val_data[5],
+            'Label_Accuracy': str(val_data[6]) + ' :good, bad: ' + str(val_data[7])
+        })
+
 
 
     def calculate_accuracy(self, predictions):
@@ -247,8 +256,20 @@ class ML_model():
                         mismatches.append(score)
             except:
                 pdb.set_trace()
-        pdb.set_trace()
 
+        matching_annotations = len(matches['IOU'])
+        total_annotations = self.valData.ann_dt[self.valData.ann_dt.Nfish != 0].shape[0]
+        AvgIOUGood = np.mean(matches['IOU'])
+        AvgScoreGood = np.mean(matches['Score'])
+        AvgScoreBad = np.mean(mismatches)
+        BadPredictions = len(mismatches)
+        labels = np.array(matches['LabelMatch'])
+        correct_sex = len(np.where(labels == 1)[0])
+        incorrect_sex = len(np.where(labels == -1)[0])
+
+        return matching_annotations, total_annotations, AvgIOUGood, AvgScoreGood, AvgScoreBad, BadPredictions, correct_sex, incorrect_sex
+
+        
     def ret_IOU(self, box1, box2):
 
         overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0],box2[0]), max(box1[1],box2[1]), min(box1[2],box2[2]), min(box1[3], box2[3])
