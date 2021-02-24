@@ -69,7 +69,7 @@ class ML_model():
         
         print('Done')
 
-    def trainModel(self, n_epochs, nesterov, dampening, learning_rate, momentum, weight_decay, lr_patience):
+    def trainModel(self):
         
         self.train_logger = Logger(os.path.join(self.results_directory, 'train.log'), ['epoch', 'loss_total', 'loss_classifier','loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg', 'lr'])
         self.train_batch_logger = Logger(os.path.join(self.results_directory, 'train_batch.log'), ['epoch', 'batch', 'iter', 'loss_total', 'lr'])
@@ -169,6 +169,17 @@ class ML_model():
             'loss_rpn_box_reg': loss_meters['loss_rpn_box_reg'].avg,
             'lr': optimizer.param_groups[0]['lr']
         })
+
+        if epoch % 5 == 0:
+            save_file_path = os.path.join(self.results_directory,
+                                          'save_{}.pth'.format(epoch))
+            states = {
+                'epoch': epoch + 1,
+                'state_dict': self.model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+            }
+            torch.save(states, save_file_path)
+
         return loss_meters['loss_total'].avg
 
     def val_epoch(self, epoch, data_loader, model):
@@ -190,7 +201,7 @@ class ML_model():
         df = pd.DataFrame.from_dict(results, orient='index')
         df['Framefile'] = df.index.map(self.valData.images.__getitem__)
 
-        val_data = self.calculate_accuracy(df)
+        val_data = self.calculate_accuracy(epoch, df)
 
         df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
         self.val_logger.log({
@@ -205,7 +216,7 @@ class ML_model():
 
 
 
-    def calculate_accuracy(self, predictions):
+    def calculate_accuracy(self, epoch, predictions):
 
         matches = {}
         matches['IOU'] = []
@@ -275,6 +286,10 @@ class ML_model():
         labels = np.array(matches['LabelMatch'])
         correct_sex = len(np.where(labels == 1)[0])
         incorrect_sex = len(np.where(labels == -1)[0])
+
+        pd.DataFrame.from_dict(matches).to_csv(self.results_directory + 'matches_' + str(epoch) + '.csv', sep = ',')
+        pd.DataFrame.from_dict(mismatches).to_csv(self.results_directory + 'mismatches_' + str(epoch) + '.csv', sep = ',')
+
         pdb.set_trace()
 
         return matching_annotations, total_annotations, AvgIOUGood, AvgScoreGood, AvgScoreBad, BadPredictions, correct_sex, incorrect_sex

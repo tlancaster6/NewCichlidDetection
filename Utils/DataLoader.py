@@ -66,3 +66,16 @@ class JPGLoader(object):
 
     def __len__(self):
         return len(self.images)
+
+class VideoLoader(object):
+
+    def __init__(self, videofile, framelist):
+        self.videofile = videofile
+        self.framelist = framelist
+
+    def __getitem__(self, idx):
+        cap = cv2.VideoCapture(self.videofile)
+        frame_number = self.framelist[idx]
+        cap.set(cv2.CV_CAP_PROP_POS_FRAMES, frame_number-1)
+        res, frame = cap.read()
+        
