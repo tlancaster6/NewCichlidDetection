@@ -211,8 +211,12 @@ class ML_model():
         matches['IOU'] = []
         matches['LabelMatch'] = []
         matches['Score'] = []
+        matches['Size'] = []
 
-        mismatches = []
+        mismatches = {}
+        mismatches = ['Score']
+        mismatches = ['Size']
+
         missing = 0
         for framefile in set(self.valData.ann_dt.Framefile):
             targets = self.valData.ann_dt.loc[self.valData.ann_dt.Framefile == framefile]
@@ -220,7 +224,9 @@ class ML_model():
 
             if targets.iloc[0].Nfish == 0:
                 for i, score in enumerate(outputs.iloc[0].scores):
-                    mismatches.append(score)
+                    mismatches['Score'].append(score)                        
+                    c_box = outputs.iloc[0].boxes[i]
+                    mismatches['Size'].append((c_box[2] - c_box[0]) * (c_box[3] - c_box[1]))
                 continue
 
             good_outputs = set()
@@ -239,6 +245,7 @@ class ML_model():
                         good_outputs.add(match)
                         matches['IOU'].append(float(IOUs[match]))
                         matches['Score'].append(outputs.iloc[0].scores[match])
+                        matches['Size'].append((box[2] - box[0]) * (box[3] - box[1]))
 
                         predicted_sex = self.valData.target_transforms[outputs.iloc[0].labels[match]]
 
@@ -253,7 +260,9 @@ class ML_model():
 
                 for i, score in enumerate(outputs.iloc[0].scores):
                     if i not in good_outputs:
-                        mismatches.append(score)
+                        mismatches['Score'].append(score)
+                        c_box = outputs.iloc[0].boxes[i]
+                        mismatches['Size'].append((c_box[2] - c_box[0]) * (c_box[3] - c_box[1]))
             except:
                 pdb.set_trace()
 
@@ -266,6 +275,7 @@ class ML_model():
         labels = np.array(matches['LabelMatch'])
         correct_sex = len(np.where(labels == 1)[0])
         incorrect_sex = len(np.where(labels == -1)[0])
+        pdb.set_trace()
 
         return matching_annotations, total_annotations, AvgIOUGood, AvgScoreGood, AvgScoreBad, BadPredictions, correct_sex, incorrect_sex
 
