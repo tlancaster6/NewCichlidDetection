@@ -203,7 +203,7 @@ class ML_model():
 
         val_data = self.calculate_accuracy(epoch, df)
 
-        df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
+        #df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
         self.val_logger.log({
             'epoch': epoch,
             'Matched_Annotations': str(val_data[0]) + ' of ' + str(val_data[1]),
@@ -289,8 +289,6 @@ class ML_model():
 
         pd.DataFrame.from_dict(matches).to_csv(self.results_directory + 'matches_' + str(epoch) + '.csv', sep = ',')
         pd.DataFrame.from_dict(mismatches).to_csv(self.results_directory + 'mismatches_' + str(epoch) + '.csv', sep = ',')
-
-        pdb.set_trace()
 
         return matching_annotations, total_annotations, AvgIOUGood, AvgScoreGood, AvgScoreBad, BadPredictions, correct_sex, incorrect_sex
 
