@@ -214,8 +214,8 @@ class ML_model():
         matches['Size'] = []
 
         mismatches = {}
-        mismatches = ['Score']
-        mismatches = ['Size']
+        mismatches['Score'] = []
+        mismatches['Size'] = []
 
         missing = 0
         for framefile in set(self.valData.ann_dt.Framefile):
