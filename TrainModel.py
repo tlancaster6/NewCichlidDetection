@@ -55,4 +55,4 @@ learningObj = ML_model(args.Results_directory, args.Videos_directory, args.Video
 learningObj.createModel()
 learningObj.splitData('Train')
 learningObj.createDataLoaders(args.batch_size, args.n_threads)
-learningObj.trainModel()
+learningObj.trainModel(args.n_epochs)

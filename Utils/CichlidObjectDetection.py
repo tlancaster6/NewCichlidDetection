@@ -69,7 +69,7 @@ class ML_model():
         
         print('Done')
 
-    def trainModel(self):
+    def trainModel(self, n_epochs):
         
         self.train_logger = Logger(os.path.join(self.results_directory, 'train.log'), ['epoch', 'loss_total', 'loss_classifier','loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg', 'lr'])
         self.train_batch_logger = Logger(os.path.join(self.results_directory, 'train_batch.log'), ['epoch', 'batch', 'iter', 'loss_total', 'lr'])
