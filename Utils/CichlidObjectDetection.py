@@ -8,9 +8,9 @@ from torch import optim
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 
-from Utils.Model import model
+from Utils.Models import model
 from Utils.DataLoader import JPGLoader
-from Utils.utils import Logger,AverageMeter,calculate_accuracy,calculate_accuracy_by_projectID
+from Utils.Utils import Logger,AverageMeter,calculate_accuracy,calculate_accuracy_by_projectID
 
 def collate_fn(batch):
     return tuple(zip(*batch))
