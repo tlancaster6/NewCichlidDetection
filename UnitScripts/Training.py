@@ -29,12 +29,6 @@ args = parser.parse_args()
 #	subprocess.call(['tar', '-xvf', 'AnnotatedData/BoxedImages/' + d, '-C', 'AnnotatedData/BoxedImages/', '--strip-components', '1'])
 
 
- 
-
-
-
-
-
 # Make directory if necessary
 if not os.path.exists(args.Results_directory):
     os.makedirs(args.Results_directory)

@@ -38,6 +38,7 @@ class ML_model():
     
         train_cutoff = 0.8
         val_cutoff = 1.0
+        random.seed(10)
 
         for image in set(self.images_dt.Framefile):
             if self.images_dt.loc[self.images_dt.Framefile == image].iloc[0].Dataset in ['Train', 'Validate']:
@@ -304,4 +305,3 @@ class ML_model():
             union = (box1[2] - box1[0]) * (box1[3] - box1[1]) +  (box2[2] - box2[0]) * (box2[3] - box2[1]) - intersection
             return(np.array(intersection/union))
 
-    
