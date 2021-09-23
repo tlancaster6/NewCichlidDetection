@@ -1,19 +1,24 @@
 import os, random, torch, time, pdb, torchvision
 
+from collections import namedtuple
+
 import pandas as pd
+import yaml
 import numpy as np
 
 from torch import nn
 from torch import optim
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
-
+from Utils.ConfigurationLoader import load_model_config
 from Utils.Models import model
 from Utils.DataLoader import JPGLoader
-from Utils.Utils import Logger,AverageMeter,calculate_accuracy,calculate_accuracy_by_projectID
+from Utils.Utils import Logger, AverageMeter, calculate_accuracy, calculate_accuracy_by_projectID
+
 
 def collate_fn(batch):
     return tuple(zip(*batch))
+
 
 class ML_model():
     def __init__(self, results_directory, images_directory, annotated_images_file):
@@ -22,20 +27,21 @@ class ML_model():
         self.images_directory = images_directory
         self.images_dt = pd.read_csv(annotated_images_file, index_col=0)
         self.images_dt = self.images_dt[(self.images_dt.CorrectAnnotation == 'Yes')]
+        self.config = load_model_config()
 
     def createModel(self):
         print('Creating Model')
         self.model = model
         self.model = self.model.to(self.device)
-        #self.model = nn.DataParallel(self.model, device_ids=None)
+        # self.model = nn.DataParallel(self.model, device_ids=None)
         self.parameters = [p for p in self.model.parameters() if p.requires_grad]
-        
+
     def splitData(self, mode):
         print('Splitting Data')
 
         if 'Dataset' not in self.images_dt or self.images_dt.Dataset.dtype == 'float64':
             self.images_dt['Dataset'] = ''
-    
+
         train_cutoff = 0.8
         val_cutoff = 1.0
         random.seed(10)
@@ -45,10 +51,10 @@ class ML_model():
                 continue
             p = random.random()
             try:
-                if p<=train_cutoff:
-                    self.images_dt.loc[self.images_dt.Framefile == image,'Dataset'] = 'Train'                
-                elif p<=val_cutoff:
-                    self.images_dt.loc[self.images_dt.Framefile == image,'Dataset'] = 'Validate'
+                if p <= train_cutoff:
+                    self.images_dt.loc[self.images_dt.Framefile == image, 'Dataset'] = 'Train'
+                elif p <= val_cutoff:
+                    self.images_dt.loc[self.images_dt.Framefile == image, 'Dataset'] = 'Validate'
                 else:
                     pass
             except ValueError:
@@ -59,28 +65,37 @@ class ML_model():
         self.n_threads = n_threads
         print('Creating Data Loaders')
 
-        self.trainData = JPGLoader(self.images_dt[(self.images_dt.Dataset == 'Train') & (self.images_dt.Sex != 'u') & (self.images_dt.Nfish != 0)], self.images_directory, augment = True)
-        self.valData = JPGLoader(self.images_dt[self.images_dt.Dataset == 'Validate'], self.images_directory, augment = True)
+        self.trainData = JPGLoader(self.images_dt[(self.images_dt.Dataset == 'Train') & (self.images_dt.Sex != 'u') & (
+                self.images_dt.Nfish != 0)], self.images_directory, augment=True)
+        self.valData = JPGLoader(self.images_dt[self.images_dt.Dataset == 'Validate'], self.images_directory,
+                                 augment=True)
 
         # Output data on split
-        self.images_dt.to_csv(self.results_directory + 'FramesSplit.csv', sep = ',')
+        self.images_dt.to_csv(self.results_directory + 'FramesSplit.csv', sep=',')
 
-        self.trainLoader = torch.utils.data.DataLoader(self.trainData, batch_size = 2, shuffle = True, num_workers = self.n_threads, collate_fn=collate_fn)
-        self.valLoader = torch.utils.data.DataLoader(self.valData, batch_size = 2, shuffle = False, num_workers = self.n_threads, collate_fn=collate_fn)
-        
+        self.trainLoader = torch.utils.data.DataLoader(self.trainData, batch_size=2, shuffle=True,
+                                                       num_workers=self.n_threads, collate_fn=collate_fn)
+        self.valLoader = torch.utils.data.DataLoader(self.valData, batch_size=2, shuffle=False,
+                                                     num_workers=self.n_threads, collate_fn=collate_fn)
+
         print('Done')
 
     def trainModel(self, n_epochs):
-        
-        self.train_logger = Logger(os.path.join(self.results_directory, 'train.log'), ['epoch', 'loss_total', 'loss_classifier','loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg', 'lr'])
-        self.train_batch_logger = Logger(os.path.join(self.results_directory, 'train_batch.log'), ['epoch', 'batch', 'iter', 'loss_total', 'lr'])
-        self.val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'Matched_Annotations', 'IOU', 'Score_good', 'Score_bad', 'Num_bad', 'Label_Accuracy'])
-        #if nesterov:
-         #   dampening = 0
-        #else:
+
+        self.train_logger = Logger(os.path.join(self.results_directory, 'train.log'),
+                                   ['epoch', 'loss_total', 'loss_classifier', 'loss_box_reg', 'loss_objectness',
+                                    'loss_rpn_box_reg', 'lr'])
+        self.train_batch_logger = Logger(os.path.join(self.results_directory, 'train_batch.log'),
+                                         ['epoch', 'batch', 'iter', 'loss_total', 'lr'])
+        self.val_logger = Logger(os.path.join(self.results_directory, 'val.log'),
+                                 ['epoch', 'Matched_Annotations', 'IOU', 'Score_good', 'Score_bad', 'Num_bad',
+                                  'Label_Accuracy'])
+        # if nesterov:
+        #   dampening = 0
+        # else:
         #    dampening = dampening
-       
-        optimizer = torch.optim.SGD(self.parameters, lr=0.005,momentum=0.9, weight_decay=0.0005)
+
+        optimizer = torch.optim.SGD(self.parameters, lr=0.005, momentum=0.9, weight_decay=0.0005)
         # and a learning rate scheduler
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
@@ -91,15 +106,16 @@ class ML_model():
             self.val_epoch(i, self.valLoader, self.model)
 
     def predictLabels(self, trainedModel):
-        #val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
+        # val_logger = Logger(os.path.join(self.results_directory, 'val.log'), ['epoch', 'loss', 'acc'])
 
         checkpoint = torch.load(trainedModel)
         begin_epoch = checkpoint['epoch']
         self.model.load_state_dict(checkpoint['state_dict'])
-        
-        validation_loss,confusion_matrix,_ = self.val_epoch(i, self.valLoader, self.model, self.criterion, val_logger)
 
-        confusion_matrix_file = os.path.join(self.results_directory,'epoch_{epoch}_confusion_matrix.csv'.format(epoch=i))
+        validation_loss, confusion_matrix, _ = self.val_epoch(i, self.valLoader, self.model, self.criterion, val_logger)
+
+        confusion_matrix_file = os.path.join(self.results_directory,
+                                             'epoch_{epoch}_confusion_matrix.csv'.format(epoch=i))
         confusion_matrix.to_csv(confusion_matrix_file)
 
     def train_one_epoch(self, epoch, data_loader, model, optimizer):
@@ -112,14 +128,12 @@ class ML_model():
         loss_meters = {loss_type: AverageMeter() for loss_type in loss_types}
         end_time = time.time()
 
+        # batch_time = AverageMeter()
+        # data_time = AverageMeter()
+        # losses = AverageMeter()
+        # accuracies = AverageMeter()
 
-
-        #batch_time = AverageMeter()
-        #data_time = AverageMeter()
-        #losses = AverageMeter()
-        #accuracies = AverageMeter()
-
-        #end_time = time.time()
+        # end_time = time.time()
         for i, (images, targets) in enumerate(data_loader):
 
             data_time.update(time.time() - end_time)
@@ -129,11 +143,10 @@ class ML_model():
 
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
-            
+
             loss_meters['loss_total'].update(losses.item(), len(images))
             for key, val in loss_dict.items():
                 loss_meters[key].update(val.item(), len(images))
-
 
             optimizer.zero_grad()
             losses.backward()
@@ -154,13 +167,13 @@ class ML_model():
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  .format(
-                      epoch,
-                      i + 1,
-                      len(data_loader),
-                      batch_time=batch_time,
-                      data_time=data_time,
-                      loss=loss_meters['loss_total']))
+                .format(
+                epoch,
+                i + 1,
+                len(data_loader),
+                batch_time=batch_time,
+                data_time=data_time,
+                loss=loss_meters['loss_total']))
         self.train_logger.log({
             'epoch': epoch,
             'loss_total': loss_meters['loss_total'].avg,
@@ -192,19 +205,19 @@ class ML_model():
             targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
             outputs = model(images)
 
-            idxs = [torchvision.ops.nms(x['boxes'],x['scores'], 0.3) for x in outputs]
+            idxs = [torchvision.ops.nms(x['boxes'], x['scores'], 0.3) for x in outputs]
 
-            outputs = [{k:v[idx].to(torch.device("cpu")).detach().numpy().tolist() for k, v, in t.items()} for t,idx in zip(outputs,idxs)]
-            #self.calculate_accuracy(targets,outputs)
+            outputs = [{k: v[idx].to(torch.device("cpu")).detach().numpy().tolist() for k, v, in t.items()} for t, idx
+                       in zip(outputs, idxs)]
+            # self.calculate_accuracy(targets,outputs)
             results.update({target["image_id"].item(): output for target, output in zip(targets, outputs)})
-
 
         df = pd.DataFrame.from_dict(results, orient='index')
         df['Framefile'] = df.index.map(self.valData.images.__getitem__)
 
         val_data = self.calculate_accuracy(epoch, df)
 
-        #df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
+        # df.to_csv(self.results_directory + str(epoch) + '_outputs.csv', sep = ',')
         self.val_logger.log({
             'epoch': epoch,
             'Matched_Annotations': str(val_data[0]) + ' of ' + str(val_data[1]),
@@ -214,8 +227,6 @@ class ML_model():
             'Num_bad': val_data[5],
             'Label_Accuracy': str(val_data[6]) + ' :good, bad: ' + str(val_data[7])
         })
-
-
 
     def calculate_accuracy(self, epoch, predictions):
 
@@ -236,16 +247,16 @@ class ML_model():
 
             if targets.iloc[0].Nfish == 0:
                 for i, score in enumerate(outputs.iloc[0].scores):
-                    mismatches['Score'].append(score)                        
+                    mismatches['Score'].append(score)
                     c_box = outputs.iloc[0].boxes[i]
                     mismatches['Size'].append((c_box[2] - c_box[0]) * (c_box[3] - c_box[1]))
                 continue
 
             good_outputs = set()
             try:
-                for box,sex in zip(targets.Box, targets.Sex):
+                for box, sex in zip(targets.Box, targets.Sex):
                     box = eval(box)
-                    box = (box[0],box[1],box[0]+box[2], box[1]+box[3])
+                    box = (box[0], box[1], box[0] + box[2], box[1] + box[3])
                     if len(outputs.iloc[0].boxes) == 0:
                         missing += 1
                         continue
@@ -288,20 +299,21 @@ class ML_model():
         correct_sex = len(np.where(labels == 1)[0])
         incorrect_sex = len(np.where(labels == -1)[0])
 
-        pd.DataFrame.from_dict(matches).to_csv(self.results_directory + 'matches_' + str(epoch) + '.csv', sep = ',')
-        pd.DataFrame.from_dict(mismatches).to_csv(self.results_directory + 'mismatches_' + str(epoch) + '.csv', sep = ',')
+        pd.DataFrame.from_dict(matches).to_csv(self.results_directory + 'matches_' + str(epoch) + '.csv', sep=',')
+        pd.DataFrame.from_dict(mismatches).to_csv(self.results_directory + 'mismatches_' + str(epoch) + '.csv', sep=',')
 
         return matching_annotations, total_annotations, AvgIOUGood, AvgScoreGood, AvgScoreBad, BadPredictions, correct_sex, incorrect_sex
 
-        
     def ret_IOU(self, box1, box2):
 
-        overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0],box2[0]), max(box1[1],box2[1]), min(box1[2],box2[2]), min(box1[3], box2[3])
+        overlap_x0, overlap_y0, overlap_x1, overlap_y1 = max(box1[0], box2[0]), max(box1[1], box2[1]), min(box1[2],
+                                                                                                           box2[
+                                                                                                               2]), min(
+            box1[3], box2[3])
 
         if overlap_x1 < overlap_x0 or overlap_y1 < overlap_y0:
-            return(0)
+            return (0)
         else:
-            intersection = (overlap_x1 - overlap_x0)*(overlap_y1 - overlap_y0)
-            union = (box1[2] - box1[0]) * (box1[3] - box1[1]) +  (box2[2] - box2[0]) * (box2[3] - box2[1]) - intersection
-            return(np.array(intersection/union))
-
+            intersection = (overlap_x1 - overlap_x0) * (overlap_y1 - overlap_y0)
+            union = (box1[2] - box1[0]) * (box1[3] - box1[1]) + (box2[2] - box2[0]) * (box2[3] - box2[1]) - intersection
+            return (np.array(intersection / union))
