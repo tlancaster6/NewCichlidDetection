@@ -1,6 +1,7 @@
 import csv, pdb
 import pandas as pd
 import scipy.special
+import argparse, os, cv2
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -74,3 +75,39 @@ def calculate_accuracy_by_projectID(outputs, targets, videofile, projectID):
 
     return pd.DataFrame({'VideoFile': videofile, 'ProjectID': projectID, 'Correct': correct[0], 'Predictions': pred[0].cpu(), 'Confidence':confidence})
 
+
+def vid_to_imgs(videofile, projectID, frame_step, resultdir):
+    localpath = os.path.dirname(__file__)
+    targetpath = os.path.join(os.path.dirname(__file__),"Input",videofile)
+    # print (os.path.exists(targetpath))
+
+    vidcap = cv2.VideoCapture(targetpath)
+    print("Total Frames: ",vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    success,image = vidcap.read()    
+    count = 0
+    while success:
+
+        savedfile = str(projectID +"_"+ videofile + "_" + "frame%d.jpg" % (count*frame_step))
+        cv2.imwrite(os.path.join(localpath,resultdir,savedfile), image)     # save frame as JPEG file      
+        print('Read a new frame: ', success)
+
+        count += 1
+        vidcap.set(cv2.CAP_PROP_POS_FRAMES, count*frame_step)
+        success,image = vidcap.read()
+        
+
+
+parser = argparse.ArgumentParser(description='This script takes video clips and annotations, either train a model from scratch or finetune a model to work on the new animals not annotated')
+# Input data
+parser.add_argument('--Video_file', type = str, required = True, help = 'Path to a video file')
+parser.add_argument('--ProjectID', type = str, required = True, help = 'Project ID')
+parser.add_argument('--Frame_step', type = int, required = True, help = 'N frame')
+# Output data
+parser.add_argument('--Results_directory', type = str, required = True, help = 'Image output directory')
+
+args = parser.parse_args()
+
+if not os.path.exists(args.Results_directory):
+    os.makedirs(args.Results_directory)
+
+vid_to_imgs(args.Video_file, args.ProjectID, args.Frame_step, args.Results_directory)
