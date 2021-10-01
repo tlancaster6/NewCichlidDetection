@@ -1,8 +1,59 @@
 import random, pdb
+
+import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
 from torchvision.transforms import functional as F
+from Utils.ConfigurationLoader import Environment
+from Utils.FileManager import FileManager
+from torch.utils.data import Dataset
+
+
+def load_boxed_annotation_data(env: Environment, download=True):
+    """
+    Retrieves annotation data and filters out invalid data
+    @param env: Environment file
+    @return: data
+    """
+    fm = FileManager(env)
+    if download:
+        fm.download_data(env.annotated_data_list)
+        fm.download_data(env.annotated_data_folder)
+    df = pd.read_csv(fm.map_relative_path_to_local(env.annotated_data_list), index_col=0)
+    df = df.loc[df['CorrectAnnotation'] == 'Yes']
+    df = df.loc[df['Box'].notna()]
+    return df
+
+
+class BoxedImageLoader(Dataset):
+    file_paths: np.ndarray
+    labels: np.ndarray
+    transforms: list
+    """
+    Characterizes BoxedImage dataset for torch
+    """
+
+    def __init__(self, boxed_images_df: pd.DataFrame, transforms: list, train_test_split=0.8):
+        boxed_images_df = boxed_images_df[['ProjectID', 'Framefile', 'Sex', 'Box']]
+        data: pd.Series = boxed_images_df.groupby(['ProjectID', 'Framefile'])['Box'].apply(list)
+        self.file_paths, self.labels = data.index.to_numpy(), data.values
+        self.transforms = transforms
+
+    def __len__(self):
+        return len(self.file_paths)
+
+    def __getitem__(self, index):
+        label = self.labels[index]
+        file_path = self.file_paths[index]
+
+        image = Image.open(file_path)
+        if self.transforms is not None and len(self.transforms) > 0:
+            transform = np.random.choice(self.transforms)
+            image = transform(image)
+
+        return image, label
+
 
 class JPGLoader(object):
     """Class to handle loading of training or testing data"""
@@ -20,8 +71,8 @@ class JPGLoader(object):
         self.images = sorted(set(self.ann_dt.Framefile))
         random.shuffle(self.images)
 
-        #self.target_transforms = {'m':1,'f':2, 'u':3}
-        self.target_transforms = ['b','m','f','u']
+        # self.target_transforms = {'m':1,'f':2, 'u':3}
+        self.target_transforms = ['b', 'm', 'f', 'u']
 
     def __getitem__(self, idx):
         """get the image and target corresponding to idx
@@ -40,7 +91,7 @@ class JPGLoader(object):
 
         # grab annotations for that image
         annotations = self.ann_dt[self.ann_dt.Framefile == self.images[idx]]
-        N_ann = annotations.iloc[0].Nfish # Number of annotations
+        N_ann = annotations.iloc[0].Nfish  # Number of annotations
 
         boxes = []
         labels = []
@@ -48,24 +99,25 @@ class JPGLoader(object):
         image_id = [idx]
 
         if N_ann == 0:
-            #pick random box
+            # pick random box
             labels = [[0]]
         else:
             for index, row in annotations.iterrows():
-                (x1,y1,w,h) = eval(row.Box)
-                boxes.append((x1,y1,x1+w,y1+h))
+                (x1, y1, w, h) = eval(row.Box)
+                boxes.append((x1, y1, x1 + w, y1 + h))
                 labels.append(self.target_transforms.index(row.Sex))
-                area.append(w*h)
+                area.append(w * h)
 
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
         labels = torch.as_tensor(labels, dtype=torch.int64)
         area = torch.as_tensor(area, dtype=torch.int64)
         image_id = torch.as_tensor(image_id, dtype=torch.int64)
 
-        return F.to_tensor(img), {'boxes':boxes, 'labels': labels, 'area':area, 'image_id':image_id}
+        return F.to_tensor(img), {'boxes': boxes, 'labels': labels, 'area': area, 'image_id': image_id}
 
     def __len__(self):
         return len(self.images)
+
 
 class VideoLoader(object):
 
@@ -76,6 +128,5 @@ class VideoLoader(object):
     def __getitem__(self, idx):
         cap = cv2.VideoCapture(self.videofile)
         frame_number = self.framelist[idx]
-        cap.set(cv2.CV_CAP_PROP_POS_FRAMES, frame_number-1)
+        cap.set(cv2.CV_CAP_PROP_POS_FRAMES, frame_number - 1)
         res, frame = cap.read()
-        

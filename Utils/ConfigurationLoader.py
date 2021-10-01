@@ -6,7 +6,9 @@ ModelConfig = namedtuple('ModelConfig',
                          ['model_name', 'n_epochs', 'batch_size', 'lr', 'optimizer', 'optimizer_kws', 'lr_scheduler',
                           'lr_scheduler_kws'])
 # Stores environment configuration details; namedtuple is used so attributes can be referenced easily
-Environment = namedtuple('Environment', ['model', 'project_id', 'local_file_path_root', 'cloud_file_path_root'])
+Environment = namedtuple('Environment',
+                         ['model', 'project_id', 'local_file_path_root', 'cloud_file_path_root', 'annotated_data_list',
+                          'rclone_config', 'annotated_data_folder'])
 
 
 def load_environment(path_to_env='../Config/env.yaml') -> Environment:
