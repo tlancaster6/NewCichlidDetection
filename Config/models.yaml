@@ -1,0 +1,9 @@
+model_1:
+  model_name: 'example'
+  n_epochs: 100
+  batch_size: 64
+  lr: 0.01
+  optimizer: 'adam'
+  optimizer_kws: {}
+  lr_scheduler: 'StepLR'
+  lr_scheduler_kws: {}
