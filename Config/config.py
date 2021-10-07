@@ -1,3 +1,4 @@
 import os
 
-ROOT_DIR_ = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+TRAINED_MODEL_FILE = "ckpt/last.weights"
