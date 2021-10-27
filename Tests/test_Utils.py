@@ -2,6 +2,7 @@ import unittest
 import Utils.ConfigurationLoader as cl
 from Utils.FileManager import FileManager
 from Utils.DataLoader import load_boxed_annotation_data, BoxedImageLoader
+from Utils.YOLOConfig import partition_dataset
 import os
 
 
@@ -34,6 +35,10 @@ class DataLoaderTest(unittest.TestCase):
     def test_load_data(self):
         environment = cl.load_environment()
         load_boxed_annotation_data(environment)
+
+    def test_yolo(self):
+        env = cl.load_environment()
+        partition_dataset(env)
 
     def test_dataset(self):
         env = cl.load_environment()

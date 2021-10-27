@@ -8,6 +8,7 @@ from torchvision.transforms import functional as F
 from Utils.ConfigurationLoader import Environment
 from Utils.FileManager import FileManager
 from torch.utils.data import Dataset
+import os
 
 
 def load_boxed_annotation_data(env: Environment, download=True):
@@ -34,25 +35,27 @@ class BoxedImageLoader(Dataset):
     Characterizes BoxedImage dataset for torch
     """
 
-    def __init__(self, boxed_images_df: pd.DataFrame, transforms: list, train_test_split=0.8):
+    def __init__(self, env: Environment, boxed_images_df: pd.DataFrame, transform=None, train_test_split=0.8):
         boxed_images_df = boxed_images_df[['ProjectID', 'Framefile', 'Sex', 'Box']]
         data: pd.Series = boxed_images_df.groupby(['ProjectID', 'Framefile'])['Box'].apply(list)
+        self.env = env
         self.file_paths, self.labels = data.index.to_numpy(), data.values
-        self.transforms = transforms
+        self.transform = transform
 
     def __len__(self):
         return len(self.file_paths)
 
     def __getitem__(self, index):
         label = self.labels[index]
-        file_path = self.file_paths[index]
+        fm = FileManager(self.env)
+        file_path = fm.map_relative_path_to_local(
+            os.path.join(self.env.annotated_data_folder, self.file_paths[index][0],
+                         self.file_paths[index][1]))
 
         image = Image.open(file_path)
-        if self.transforms is not None and len(self.transforms) > 0:
-            transform = np.random.choice(self.transforms)
-            image = transform(image)
-
-        return image, label
+        if self.transform is not None:
+            image = self.transform(image)
+        return torch.tensor(image), torch.tensor(eval(label[0]))
 
 
 class JPGLoader(object):

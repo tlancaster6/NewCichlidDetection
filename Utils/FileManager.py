@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import subprocess
 from Utils.ConfigurationLoader import Environment
-from Config.config import ROOT_DIR_
+from Config.config import ROOT_DIR
 import os
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -25,7 +25,7 @@ class FileManager:
         @param relative_path:
         @return:
         """
-        return os.path.join(os.path.join(ROOT_DIR_, self.local_master_dir), relative_path)
+        return os.path.join(os.path.join(ROOT_DIR, self.local_master_dir), relative_path)
 
     def map_relative_path_to_cloud(self, relative_path: str):
         """
@@ -109,3 +109,18 @@ class FileManager:
                 path = os.path.join(local_path, relative_name)
                 for f in os.listdir(path):
                     self.untar_file(path, f)
+<<<<<<< Updated upstream
+=======
+
+    def move_file(self, relative_path_loc: str, relative_path_dest: str):
+        os.rename(self.map_relative_path_to_local(relative_path_loc),
+                  self.map_relative_path_to_local(relative_path_dest))
+
+    def upload_data(self):
+        # TODO: finish upload data
+        pass
+
+    def upload_data_and_merge(self):
+        # TODO: finish upload data and merge
+        pass
+>>>>>>> Stashed changes
