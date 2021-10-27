@@ -1,0 +1,9 @@
+train: ./data/CichlidDataset/images/train/
+val:  ./data/CichlidDataset/images/val/
+test: ./data/CichlidDataset/images/test/
+
+# number of classes
+nc: 2
+
+# class names
+names: ["male", "female"]
