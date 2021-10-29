@@ -5,6 +5,7 @@ from Utils.ConfigurationLoader import Environment
 from Config.config import ROOT_DIR_
 import os
 import pdb
+import pandas as pd
 
 
 class FileManager:
@@ -142,6 +143,29 @@ class FileManager:
             pdb.set_trace()
             raise Exception('Error in uploading file: ' + output.stderr)
 
-    def upload_data_and_merge(self):
-        # TODO: finish upload data and merge
-        pass
+    def upload_data_and_merge(self, local_data, master_file, tarred = False, ID = False):
+        if os.path.isfile(local_data):
+            #We are merging two crv files
+            self.downloadData(master_file)
+            
+            if ID:
+                old_dt = pd.read_csv(master_file, index_col = ID)
+                new_dt = pd.read_csv(local_data, index_col = ID)
+                old_dt = old_dt.append(new_dt)
+                old_dt.index.name = ID
+            else:
+                old_dt = pd.read_csv(master_file)
+                new_dt = pd.read_csv(local_data)
+                old_dt = old_dt.append(new_dt)
+            
+            old_dt.to_csv(master_file, sep = ',')
+            self.uploadData(master_file)
+        else:
+            #We are merging two tarred directories
+            try:        
+                self.downloadData(master_file, tarred = True)
+            except FileNotFoundError:
+                self.createDirectory(master_file)
+            for nfile in os.listdir(local_data):
+                subprocess.run(['mv', local_data + nfile, master_file])
+            self.uploadData(master_file, tarred = True)
