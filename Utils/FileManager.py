@@ -4,6 +4,7 @@ import subprocess
 from Utils.ConfigurationLoader import Environment
 from Config.config import ROOT_DIR_
 import os
+import pdb
 
 
 class FileManager:
@@ -110,9 +111,36 @@ class FileManager:
                 for f in os.listdir(path):
                     self.untar_file(path, f)
 
-    def upload_data(self):
-        # TODO: finish upload data
-        pass
+    def upload_data(self, local_data, tarred = False):
+        
+        assert local_data is not None, "Local_data was None"
+
+        local_path_dir, name = os.path.split(self.map_relative_path_to_local(local_data))
+        cloud_path_dir, name = os.path.split(self.map_relative_path_to_cloud(local_data))
+
+        relative_name = local_data.rstrip('/').split('/')[-1]
+
+        if tarred:
+            output = subprocess.run(['tar', '-cvf', local_path_dir + relative_name + '.tar', '-C', local_path_dir, relative_name], capture_output = True, encoding = 'utf-8')
+            if output.returncode != 0:
+                print(output.stderr)
+                raise Exception('Error in tarring ' + local_data)
+            relative_name += '.tar'
+
+        if os.path.isdir(local_path_dir + relative_name):
+            output = subprocess.run(['rclone', 'copy', local_path_dir + relative_name, cloud_path_dir + relative_name], capture_output = True, encoding = 'utf-8')
+            #subprocess.run(['rclone', 'check', local_path_dir + relative_name, cloud_path_dir + relative_name], check = True) #Troubleshooting directory will have depth data in it when you upload the cluster data
+
+        elif os.path.isfile(local_path_dir + relative_name):
+            print(['rclone', 'copy', local_path_dir + relative_name, cloud_path_dir])
+            output = subprocess.run(['rclone', 'copy', local_path_dir + relative_name, cloud_path_dir], capture_output = True, encoding = 'utf-8')
+            output = subprocess.run(['rclone', 'check', local_path_dir + relative_name, cloud_path_dir], check = True, capture_output = True, encoding = 'utf-8')
+        else:
+            raise Exception(local_data + ' does not exist for upload')
+
+        if output.returncode != 0:
+            pdb.set_trace()
+            raise Exception('Error in uploading file: ' + output.stderr)
 
     def upload_data_and_merge(self):
         # TODO: finish upload data and merge
